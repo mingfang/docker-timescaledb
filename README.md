@@ -1,2 +1,2 @@
-# docker-timesqldb
+# docker-timescaledb
 Run TimeScaleDB Inside Docker
