@@ -1,0 +1,29 @@
+#!/bin/bash
+
+#sv start socklog-unix || exit 1
+
+source /etc/envvars
+
+if [ ! "$(ls -A ${PGDATA})" ]; then
+   #init db
+   mkdir -p ${PGDATA}
+   chown -R postgres ${PGDATA}
+   sudo -u postgres /usr/lib/postgresql/*/bin/initdb --locale en_US.UTF-8 -E UTF8 -D ${PGDATA}
+   #configure
+   sed -i -e "s|#listen_addresses =.*|listen_addresses = '*'|" ${PGDATA}/postgresql.conf
+   echo "shared_preload_libraries = 'timescaledb'" >> ${PGDATA}/postgresql.conf
+   echo "host  all  all 0.0.0.0/0 trust" >> ${PGDATA}/pg_hba.conf
+   sudo -u postgres /usr/lib/postgresql/*/bin/pg_ctl start -w -D ${PGDATA}
+   sudo -u postgres /usr/lib/postgresql/*/bin/psql -c "ALTER USER postgres PASSWORD 'postgres';"
+   sudo -u postgres /usr/lib/postgresql/*/bin/psql -c "CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;"
+   #apply ddl
+   if [ -f /ddl ]; then
+     sudo -u postgres psql -d template1 < /ddl
+   fi
+   sudo -u postgres /usr/lib/postgresql/*/bin/pg_ctl -m smart -D ${PGDATA} stop
+fi
+
+chown -R postgres ${PGDATA}
+
+exec 2>&1
+exec sudo -u postgres /usr/lib/postgresql/*/bin/postgres -D ${PGDATA}
