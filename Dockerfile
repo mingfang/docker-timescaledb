@@ -16,18 +16,22 @@ CMD bash -c 'export > /etc/envvars && /usr/sbin/runsvdir-start'
 # Utilities
 RUN apt-get install -y --no-install-recommends vim less net-tools inetutils-ping wget curl git telnet nmap socat dnsutils netcat tree htop unzip sudo software-properties-common jq psmisc iproute python ssh rsync gettext-base
 
+# Postgres
 RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ xenial-pgdg main" > /etc/apt/sources.list.d/pgdg.list
 RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
 RUN apt-get update
 
-# Postgres
-RUN apt-get install -y postgresql-9.6
+RUN apt-get install -y postgresql-10
 ENV PATH=$PATH:/usr/lib/postgresql/*/bin
 ENV PGDATA=/data
 
 RUN add-apt-repository ppa:timescale/timescaledb-ppa
 RUN apt-get update
-RUN apt install -y timescaledb-postgresql-9.6
+RUN apt install -y timescaledb-postgresql-10
+
+RUN apt-get install -y pgadmin4
+RUN echo "SERVER_MODE = False" >> /usr/share/pgadmin4/web/config.py
+RUN echo "DEFAULT_SERVER = '0.0.0.0'" >> /usr/share/pgadmin4/web/config.py
 
 # Add runit services
 COPY sv /etc/service 
